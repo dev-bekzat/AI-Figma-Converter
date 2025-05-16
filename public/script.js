@@ -1,5 +1,3 @@
-// public/script.js — подключается к index.html
-
 const figmaFileInput = document.getElementById('figmaFile');
 const generateBtn = document.getElementById('generateBtn');
 const generateByUrlBtn = document.getElementById('generateByUrlBtn');
@@ -14,11 +12,10 @@ function showDownloadLinks(data) {
   downloadCSS.style.display = 'inline-block';
 }
 
-// Отправка JSON-файла
 generateBtn.addEventListener('click', async () => {
   const file = figmaFileInput.files[0];
   if (!file) {
-    alert('Пожалуйста, выберите файл Figma (JSON).');
+    alert('Please, choose Figma file (JSON).');
     return;
   }
 
@@ -34,22 +31,21 @@ generateBtn.addEventListener('click', async () => {
     const data = await res.json();
 
     if (data.error) {
-      alert('Ошибка генерации: ' + data.error);
+      alert('Generate error: ' + data.error);
       return;
     }
 
     showDownloadLinks(data);
   } catch (err) {
-    alert('Ошибка при отправке файла.');
+    alert('Error sending file.');
     console.error(err);
   }
 });
 
-// Отправка ссылки на Figma
 generateByUrlBtn.addEventListener('click', async () => {
   const url = figmaUrlInput.value.trim();
   if (!url) {
-    alert('Введите ссылку на Figma.');
+    alert('Enter Figma link.');
     return;
   }
 
@@ -63,13 +59,13 @@ generateByUrlBtn.addEventListener('click', async () => {
     const data = await res.json();
 
     if (data.error) {
-      alert('Ошибка генерации: ' + data.error);
+      alert('Error generating: ' + data.error);
       return;
     }
 
     showDownloadLinks(data);
   } catch (err) {
-    alert('Ошибка при отправке ссылки.');
+    alert('Error sending link.');
     console.error(err);
   }
 });
