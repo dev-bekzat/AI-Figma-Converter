@@ -1,0 +1,38 @@
+body {
+    background: #3f3d43;
+    color:#e0d9ff;
+    text-align: center;
+    padding: 150px;
+}
+
+.container {
+    background: #0e0b13;
+    padding: 30px;
+    border-radius: 15px;
+}
+
+input[type="file"], button {
+    margin:10px;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+button {
+    background-color: #2d2b31;
+    color: white;
+}
+
+button:hover {
+    background-color: #7b7b7b;
+}
+
+#result a {
+    color: #2d2b31;
+    font-size: 18px;
+}
+
+#result a:hover {
+    text-decoration: underline;
+}
