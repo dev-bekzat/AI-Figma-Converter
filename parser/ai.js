@@ -1,97 +1,105 @@
-// parser/ai.js — шаблон логин-страницы с иконкой, стилями и кнопкой
+// parser/ai.js — генерация адаптивной формы из Figma JSON
 
-function parseFigmaJson() {
-  const html = `<!DOCTYPE html>
-<html lang="en">
+function parseFigmaJson(json) {
+  const htmlParts = [];
+  const cssParts = [];
+
+  let index = 0;
+  const addClass = (base) => `${base}-${index++}`;
+
+  function walk(node) {
+    if (!node || !node.type) return;
+
+    const id = node.id.replace(/[:;]/g, '_');
+    const name = (node.name || '').toLowerCase();
+
+    const style = node.style || {};
+    const fill = (node.fills && node.fills[0]) ? node.fills[0].color : null;
+    const fontSize = style.fontSize || 16;
+    const fontFamily = style.fontFamily || 'sans-serif';
+    const textColor = fill ? `rgb(${Math.round(fill.r * 255)}, ${Math.round(fill.g * 255)}, ${Math.round(fill.b * 255)})` : '#000';
+
+    const css = [];
+    let html = '';
+
+    if (node.type === 'TEXT' && node.characters) {
+      const cls = addClass('text');
+      html = `<p class="${cls}">${node.characters}</p>`;
+      css.push(`.${cls} { font-size: ${fontSize}px; font-family: ${fontFamily}; color: ${textColor}; margin: 8px 0; }`);
+    }
+
+    if (name.includes('username')) {
+      const labelCls = addClass('label');
+      const inputCls = addClass('input');
+      html = `
+        <label class="${labelCls}">Username</label>
+        <input type="text" class="${inputCls}" />
+      `;
+      css.push(`.${labelCls} { font-size: ${fontSize}px; margin-top: 16px; display: block; }`);
+      css.push(`.${inputCls} { padding: 10px; width: 100%; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 12px; }`);
+    }
+
+    if (name.includes('password')) {
+      const labelCls = addClass('label');
+      const inputCls = addClass('input');
+      html = `
+        <label class="${labelCls}">Password</label>
+        <input type="password" class="${inputCls}" />
+      `;
+      css.push(`.${labelCls} { font-size: ${fontSize}px; margin-top: 16px; display: block; }`);
+      css.push(`.${inputCls} { padding: 10px; width: 100%; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 12px; }`);
+    }
+
+    if (name.includes('login')) {
+      const btnCls = addClass('btn');
+      html = `<button class="${btnCls}">Login</button>`;
+      css.push(`.${btnCls} { background-color: #1f47e4; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-top: 12px; width: 100%; }`);
+    }
+
+    if (name.includes('forgot')) {
+      const cls = addClass('link');
+      html = `<a href="#" class="${cls}">Forgot password?</a>`;
+      css.push(`.${cls} { font-size: 14px; color: #1f47e4; text-align: center; display: block; margin-top: 10px; text-decoration: none; }`);
+    }
+
+    if (html) htmlParts.push(html);
+    cssParts.push(...css);
+
+    if (node.children && node.children.length) {
+      node.children.forEach(walk);
+    }
+  }
+
+  walk(json.document);
+
+  return {
+    html: `
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Login Page</title>
-  <link rel="stylesheet" href="/result/result.css" />
+  <meta charset="UTF-8">
+  <title>Generated Page</title>
+  <link rel="stylesheet" href="/result/result.css">
 </head>
 <body>
-  <div class="login-wrapper">
-    <div class="login-box">
-      <div class="icon">
-        <svg width="64" height="64" fill="white" viewBox="0 0 24 24">
-          <path d="M16 6h2l3 7v2a1 1 0 01-1 1h-1v2a1 1 0 01-1 1h-1.18A3 3 0 0113 21H7a3 3 0 01-2.82-2H3a1 1 0 01-1-1v-2h1.18L6 6h10zm-1 2H7.42l-2 6h13.16l-2-6z"/>
-        </svg>
-      </div>
-      <div class="input-group">
-        <input type="text" placeholder="Username" />
-      </div>
-      <div class="input-group">
-        <input type="password" placeholder="Password" />
-      </div>
-      <button class="login-btn">LOGIN</button>
-      <a href="#" class="forgot">Forgot password?</a>
-    </div>
+  <div class="generated-form">
+    ${htmlParts.join('\n')}
   </div>
 </body>
-</html>`;
-
-  const css = `body {
-  margin: 0;
-  font-family: 'Segoe UI', sans-serif;
-  background: #0d47d8;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-}
-
-.login-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.login-box {
-  background: rgba(255, 255, 255, 0.05);
-  padding: 40px;
-  border-radius: 12px;
-  width: 360px;
-  text-align: center;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-}
-
-.icon {
-  margin-bottom: 32px;
-}
-
-.input-group {
-  margin-bottom: 20px;
-}
-
-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  outline: none;
-}
-
-.login-btn {
-  width: 100%;
-  padding: 12px;
-  border: none;
+</html>
+    `.trim(),
+    css: `
+body { margin: 0; font-family: sans-serif; background: #f0f2f5; }
+.generated-form {
+  max-width: 400px;
+  margin: 100px auto;
   background: white;
-  color: #0d47d8;
-  font-weight: bold;
-  border-radius: 6px;
-  cursor: pointer;
-  margin-top: 12px;
+  padding: 40px;
+  border-radius: 8px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
 }
-
-.forgot {
-  display: inline-block;
-  margin-top: 16px;
-  font-size: 13px;
-  color: white;
-  text-decoration: none;
-}`;
-
-  return { html, css };
+${cssParts.join('\n')}`.trim()
+  };
 }
 
 module.exports = { parseFigmaJson };
