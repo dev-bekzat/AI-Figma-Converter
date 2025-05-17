@@ -66,7 +66,7 @@ A fully local tool that transforms Figma designs into modern, clean HTML and CSS
 
 ---
 
-## Example Output
+## Example
 
 - Input: Login Page (Figma)
 - Output: Visually matching responsive HTML page with form and dark styling
@@ -79,17 +79,3 @@ A fully local tool that transforms Figma designs into modern, clean HTML and CSS
 - OpenAI GPT-3.5 API
 - HTML5 / CSS3
 - Figma REST API
-
----
-
-## Team Contribution
-
-- Logic & Parsing: [Your Name]
-- GPT Integration: [Your Name]
-- UI Design: [Your Name]
-
----
-
-## License
-
-MIT — Free to use for educational and development purposes
