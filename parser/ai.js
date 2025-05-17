@@ -14,114 +14,150 @@ function parseFigmaJson(json) {
     if (fill) css += `background: ${colorToCss(fill)};`;
     if (style.backgroundColor) css += `background: ${colorToCss(style.backgroundColor)};`;
     if (style.borderRadius) css += `border-radius: ${style.borderRadius}px;`;
-    if (style.padding) css += `padding: ${style.padding}px;`;
-    if (style.margin) css += `margin: ${style.margin}px;`;
     if (style.width) css += `width: ${style.width}px;`;
     if (style.height) css += `height: ${style.height}px;`;
     if (style.boxShadow) css += `box-shadow: ${style.boxShadow};`;
     if (style.border) css += `border: ${style.border};`;
-    if (style.gap) css += `gap: ${style.gap}px;`;
     if (style.opacity !== undefined) css += `opacity: ${style.opacity};`;
-    if (style.textAlign) css += `text-align: ${style.textAlign};`;
     return css;
   }
 
-  function walk(node) {
-    if (!node || !node.type) return '';
-
-    const name = (node.name || '').toLowerCase();
-    const style = node.style || {};
-    const fill = (node.fills && node.fills[0] && node.fills[0].type === 'SOLID') ? node.fills[0].color : null;
-    const fontSize = style.fontSize || 16;
-    const fontFamily = style.fontFamily || 'Inter, Arial, sans-serif';
-    const textColor = style.fill ? colorToCss(style.fill) : (fill ? colorToCss(fill) : '#fff');
-
-    let html = '';
-    let css = [];
-    let cls = '';
-
-    // --- Контейнеры (FRAME, GROUP) ---
-    if (node.type === 'FRAME' || node.type === 'GROUP') {
-      cls = addClass('container');
-      let childrenHtml = '';
-      if (node.children && node.children.length) {
-        childrenHtml = node.children.map(child => walk(child)).join('\n');
-      }
-      html = `<div class="${cls}">${childrenHtml}</div>`;
-      css.push(`.${cls} { display: flex; flex-direction: column; ${styleToCss(style, fill)} }`);
-      htmlParts.push(html);
-      cssParts.push(...css);
-      return html;
+  function vectorToSvg(node) {
+    if (node.svgPath) {
+      return `<svg width="${node.absoluteBoundingBox?.width || 48}" height="${node.absoluteBoundingBox?.height || 48}" viewBox="0 0 ${node.absoluteBoundingBox?.width || 48} ${node.absoluteBoundingBox?.height || 48}" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="${node.svgPath}" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     }
-
-    // --- Текст ---
-    if (node.type === 'TEXT' && node.characters) {
-      cls = addClass('text');
-      html = `<p class="${cls}">${node.characters}</p>`;
-      css.push(`.${cls} { font-size: ${fontSize}px; font-family: ${fontFamily}; color: ${textColor}; margin: 8px 0; ${styleToCss(style)} }`);
-      htmlParts.push(html);
-      cssParts.push(...css);
-      return html;
-    }
-
-    // --- Прямоугольник ---
-    if (node.type === 'RECTANGLE') {
-      cls = addClass('rect');
-      html = `<div class="${cls}"></div>`;
-      css.push(`.${cls} { width: ${style.width || 100}px; height: ${style.height || 20}px; ${styleToCss(style, fill)} margin: 8px 0; }`);
-      htmlParts.push(html);
-      cssParts.push(...css);
-      return html;
-    }
-
-    // --- Линия ---
-    if (node.type === 'LINE') {
-      cls = addClass('line');
-      html = `<div class="${cls}"></div>`;
-      css.push(`.${cls} { width: ${style.width || 100}px; height: 1px; background: ${fill ? colorToCss(fill) : '#fff'}; margin: 8px 0; }`);
-      htmlParts.push(html);
-      cssParts.push(...css);
-      return html;
-    }
-
-    // --- Эллипс (круг) ---
-    if (node.type === 'ELLIPSE') {
-      cls = addClass('ellipse');
-      html = `<div class="${cls}"></div>`;
-      css.push(`.${cls} { width: ${style.width || 40}px; height: ${style.height || 40}px; border-radius: 50%; ${styleToCss(style, fill)} margin: 8px 0; }`);
-      htmlParts.push(html);
-      cssParts.push(...css);
-      return html;
-    }
-
-    // --- Изображение ---
-    if (node.type === 'IMAGE' && node.imageRef) {
-      cls = addClass('img');
-      html = `<img class="${cls}" src="${node.imageRef}" alt="${node.name || ''}" />`;
-      css.push(`.${cls} { width: ${style.width || 100}px; height: ${style.height || 100}px; object-fit: cover; ${styleToCss(style)} }`);
-      htmlParts.push(html);
-      cssParts.push(...css);
-      return html;
-    }
-
-    // --- Иконки (icon, eye) ---
-    if ((name.includes('icon') || name.includes('eye')) && node.type !== 'TEXT') {
-      cls = addClass('icon');
-      html = `<span class="${cls}"></span>`;
-      css.push(`.${cls} { display: inline-block; width: 20px; height: 20px; background: url('/result/eye.svg') center/contain no-repeat; vertical-align: middle; margin-left: 4px; cursor: pointer; }`);
-      htmlParts.push(html);
-      cssParts.push(...css);
-      return html;
-    }
-
-    // --- Рекурсивно для остальных детей ---
-    if (node.children && node.children.length) {
-      node.children.forEach(child => walk(child));
-    }
+    return '';
   }
 
-  // Парсим всё дерево, не только главный контейнер
-  walk(json.document);
+  // --- Рекурсивный поиск всех групп для инпутов ---
+  function findInputGroups(node) {
+    let groups = [];
+    if ((node.type === 'GROUP' || node.type === 'FRAME') && node.children) {
+      const hasRect = node.children.some(c => c.type === 'RECTANGLE');
+      const hasText = node.children.some(c => c.type === 'TEXT');
+      if (hasRect && hasText) {
+        groups.push(node);
+      }
+    }
+    if (node.children) {
+      node.children.forEach(child => {
+        groups = groups.concat(findInputGroups(child));
+      });
+    }
+    return groups;
+  }
+
+  // --- Поиск SVG-иконки корзины (VECTOR) ---
+  function findCartIcon(node) {
+    if (node.type === 'VECTOR' && (node.name?.toLowerCase().includes('cart') || node.name?.toLowerCase().includes('icon'))) {
+      return node;
+    }
+    if (node.children) {
+      for (const child of node.children) {
+        const found = findCartIcon(child);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  // --- Поиск текстовых кнопок и ссылок ---
+  function findTextByName(node, keyword) {
+    if (node.type === 'TEXT' && (node.name || '').toLowerCase().includes(keyword)) {
+      return node;
+    }
+    if (node.children) {
+      for (const child of node.children) {
+        const found = findTextByName(child, keyword);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  // --- Поиск контейнера формы ---
+  function findFormContainer(node) {
+    if (!node || !node.type) return null;
+    const name = (node.name || '').toLowerCase();
+    if ((node.type === 'FRAME' || node.type === 'GROUP') && (name.includes('form') || name.includes('login'))) {
+      return node;
+    }
+    if (node.children && node.children.length) {
+      for (const child of node.children) {
+        const found = findFormContainer(child);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  // --- Парсинг формы ---
+  function parseForm(node) {
+    let html = '';
+    let css = [];
+    let formCls = addClass('form');
+    let iconHtml = '';
+    let inputsHtml = '';
+    let btnHtml = '';
+    let linkHtml = '';
+
+    // SVG-иконка корзины
+    const icon = findCartIcon(node);
+    if (icon) {
+      iconHtml = `<div class="form-icon">${vectorToSvg(icon)}</div>`;
+      css.push(`.form-icon { display: flex; justify-content: center; margin-bottom: 32px; }`);
+    }
+
+    // Инпуты
+    const inputGroups = findInputGroups(node);
+    inputGroups.forEach(group => {
+      const rect = group.children?.find(c => c.type === 'RECTANGLE');
+      const text = group.children?.find(c => c.type === 'TEXT');
+      const icon = group.children?.find(c => c.type === 'VECTOR');
+      if (rect && text) {
+        const inputCls = addClass('input');
+        let iconHtml = icon ? `<span class="input-icon">${vectorToSvg(icon)}</span>` : '';
+        inputsHtml += `<div class="input-block">${iconHtml}<input class="${inputCls}" placeholder="${text.characters}" /></div>`;
+        css.push(`.${inputCls} { 
+          padding: 14px 44px; width: 100%; border: 1.5px solid #fff; border-radius: 6px; margin-bottom: 18px; font-size: 16px; background: transparent; color: #fff; 
+        }`);
+        css.push(`.input-block { position: relative; margin-bottom: 18px; }`);
+        css.push(`.input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; pointer-events: none; }`);
+      }
+    });
+
+    // Кнопка и ссылка
+    const loginBtn = findTextByName(node, 'login');
+    if (loginBtn) {
+      btnHtml = `<button class="form-btn">${loginBtn.characters}</button>`;
+      css.push(`.form-btn { width: 100%; background: #fff; color: #144ee3; border: none; border-radius: 6px; font-size: 18px; font-weight: 600; padding: 14px 0; margin: 18px 0 0 0; cursor: pointer; transition: background 0.2s; }`);
+    }
+    const forgotLink = findTextByName(node, 'forgot');
+    if (forgotLink) {
+      linkHtml = `<a class="form-link" href="#">${forgotLink.characters}</a>`;
+      css.push(`.form-link { display: block; text-align: center; color: #fff; opacity: 0.8; margin-top: 12px; text-decoration: none; font-size: 16px; }`);
+    }
+
+    html = `
+      <form class="${formCls}">
+        ${iconHtml}
+        ${inputsHtml}
+        ${btnHtml}
+        ${linkHtml}
+      </form>
+    `;
+    css.push(`.${formCls} { max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; align-items: stretch; background: rgba(20,78,227,0.95); border-radius: 12px; padding: 48px 36px; box-shadow: 0 8px 32px rgba(31,71,228,0.08); }`);
+    htmlParts.push(html);
+    cssParts.push(...css);
+  }
+
+  // --- Основной вызов ---
+  const formContainer = findFormContainer(json.document);
+  if (formContainer) {
+    parseForm(formContainer);
+  } else {
+    htmlParts.push('<div style="color:red;text-align:center">Форма не найдена</div>');
+  }
 
   return {
     html: `
@@ -129,33 +165,18 @@ function parseFigmaJson(json) {
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Generated Page</title>
+  <title>Generated Login Page</title>
   <link rel="stylesheet" href="/result/result.css">
 </head>
-<body>
-  <div class="generated-root">
-    ${htmlParts.join('\n')}
-  </div>
+<body style="background:#144ee3;min-height:100vh;display:flex;align-items:center;justify-content:center;">
+  ${htmlParts.join('\n')}
 </body>
 </html>
     `.trim(),
     css: `
-body { margin: 0; font-family: 'Inter', Arial, sans-serif; background: #101114; color: #fff; }
-.generated-root {
-  max-width: 900px;
-  margin: 40px auto;
-  background: #181a20;
-  padding: 40px 32px 32px 32px;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(31,71,228,0.08);
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-}
-img { display: block; }
-input, button { outline: none; }
-${cssParts.join('\n')}`.trim()
+body { margin: 0; font-family: 'Inter', Arial, sans-serif; background: #144ee3; color: #fff; }
+${cssParts.join('\n')}
+    `.trim()
   };
 }
 
