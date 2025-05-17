@@ -1,85 +1,10 @@
 function parseFigmaJson(json) {
-  const htmlParts = [];
-  const cssParts = [];
-  let index = 0;
-  const addClass = (base) => `${base}-${index++}`;
+  let html = '';
 
-  function colorToCss(color) {
-    if (!color) return '';
-    return `rgb(${Math.round(color.r * 255)},${Math.round(color.g * 255)},${Math.round(color.b * 255)})`;
-  }
-
-  function styleToCss(style = {}, fill = null) {
-    let css = '';
-    if (fill) css += `background: ${colorToCss(fill)};`;
-    if (style.backgroundColor) css += `background: ${colorToCss(style.backgroundColor)};`;
-    if (style.borderRadius) css += `border-radius: ${style.borderRadius}px;`;
-    if (style.width) css += `width: ${style.width}px;`;
-    if (style.height) css += `height: ${style.height}px;`;
-    if (style.boxShadow) css += `box-shadow: ${style.boxShadow};`;
-    if (style.border) css += `border: ${style.border};`;
-    if (style.opacity !== undefined) css += `opacity: ${style.opacity};`;
-    return css;
-  }
-
-  function vectorToSvg(node) {
-    if (node.svgPath) {
-      return `<svg width="${node.absoluteBoundingBox?.width || 48}" height="${node.absoluteBoundingBox?.height || 48}" viewBox="0 0 ${node.absoluteBoundingBox?.width || 48} ${node.absoluteBoundingBox?.height || 48}" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="${node.svgPath}" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-    }
-    return '';
-  }
-
-  // --- Рекурсивный поиск всех групп для инпутов ---
-  function findInputGroups(node) {
-    let groups = [];
-    if ((node.type === 'GROUP' || node.type === 'FRAME') && node.children) {
-      const hasRect = node.children.some(c => c.type === 'RECTANGLE');
-      const hasText = node.children.some(c => c.type === 'TEXT');
-      if (hasRect && hasText) {
-        groups.push(node);
-      }
-    }
-    if (node.children) {
-      node.children.forEach(child => {
-        groups = groups.concat(findInputGroups(child));
-      });
-    }
-    return groups;
-  }
-
-  // --- Поиск SVG-иконки корзины (VECTOR) ---
-  function findCartIcon(node) {
-    if (node.type === 'VECTOR' && (node.name?.toLowerCase().includes('cart') || node.name?.toLowerCase().includes('icon'))) {
-      return node;
-    }
-    if (node.children) {
-      for (const child of node.children) {
-        const found = findCartIcon(child);
-        if (found) return found;
-      }
-    }
-    return null;
-  }
-
-  // --- Поиск текстовых кнопок и ссылок ---
-  function findTextByName(node, keyword) {
-    if (node.type === 'TEXT' && (node.name || '').toLowerCase().includes(keyword)) {
-      return node;
-    }
-    if (node.children) {
-      for (const child of node.children) {
-        const found = findTextByName(child, keyword);
-        if (found) return found;
-      }
-    }
-    return null;
-  }
-
-  // --- Поиск контейнера формы ---
   function findFormContainer(node) {
     if (!node || !node.type) return null;
     const name = (node.name || '').toLowerCase();
-    if ((node.type === 'FRAME' || node.type === 'GROUP') && (name.includes('form') || name.includes('login'))) {
+    if ((node.type === 'FRAME' || node.type === 'GROUP') && (name.includes('form') || name.includes('login') || name.includes('painel'))) {
       return node;
     }
     if (node.children && node.children.length) {
@@ -91,73 +16,197 @@ function parseFigmaJson(json) {
     return null;
   }
 
-  // --- Парсинг формы ---
-  function parseForm(node) {
-    let html = '';
-    let css = [];
-    let formCls = addClass('form');
-    let iconHtml = '';
-    let inputsHtml = '';
-    let btnHtml = '';
-    let linkHtml = '';
-
-    // SVG-иконка корзины
-    const icon = findCartIcon(node);
-    if (icon) {
-      iconHtml = `<div class="form-icon">${vectorToSvg(icon)}</div>`;
-      css.push(`.form-icon { display: flex; justify-content: center; margin-bottom: 32px; }`);
-    }
-
-    // Инпуты
-    const inputGroups = findInputGroups(node);
-    inputGroups.forEach(group => {
-      const rect = group.children?.find(c => c.type === 'RECTANGLE');
-      const text = group.children?.find(c => c.type === 'TEXT');
-      const icon = group.children?.find(c => c.type === 'VECTOR');
-      if (rect && text) {
-        const inputCls = addClass('input');
-        let iconHtml = icon ? `<span class="input-icon">${vectorToSvg(icon)}</span>` : '';
-        inputsHtml += `<div class="input-block">${iconHtml}<input class="${inputCls}" placeholder="${text.characters}" /></div>`;
-        css.push(`.${inputCls} { 
-          padding: 14px 44px; width: 100%; border: 1.5px solid #fff; border-radius: 6px; margin-bottom: 18px; font-size: 16px; background: transparent; color: #fff; 
-        }`);
-        css.push(`.input-block { position: relative; margin-bottom: 18px; }`);
-        css.push(`.input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; pointer-events: none; }`);
+  function classifyTexts(node) {
+    const texts = [];
+    function walk(n) {
+      if (!n) return;
+      if (n.type === 'TEXT') {
+        const name = (n.name || '').toLowerCase();
+        const chars = (n.characters || '').toLowerCase();
+        texts.push({
+          name,
+          raw: n.characters,
+          chars,
+          node: n
+        });
       }
-    });
-
-    // Кнопка и ссылка
-    const loginBtn = findTextByName(node, 'login');
-    if (loginBtn) {
-      btnHtml = `<button class="form-btn">${loginBtn.characters}</button>`;
-      css.push(`.form-btn { width: 100%; background: #fff; color: #144ee3; border: none; border-radius: 6px; font-size: 18px; font-weight: 600; padding: 14px 0; margin: 18px 0 0 0; cursor: pointer; transition: background 0.2s; }`);
+      if (n.children) n.children.forEach(walk);
     }
-    const forgotLink = findTextByName(node, 'forgot');
-    if (forgotLink) {
-      linkHtml = `<a class="form-link" href="#">${forgotLink.characters}</a>`;
-      css.push(`.form-link { display: block; text-align: center; color: #fff; opacity: 0.8; margin-top: 12px; text-decoration: none; font-size: 16px; }`);
-    }
+    walk(node);
+    return texts;
+  }
 
-    html = `
-      <form class="${formCls}">
-        ${iconHtml}
-        ${inputsHtml}
-        ${btnHtml}
-        ${linkHtml}
-      </form>
-    `;
-    css.push(`.${formCls} { max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; align-items: stretch; background: rgba(20,78,227,0.95); border-radius: 12px; padding: 48px 36px; box-shadow: 0 8px 32px rgba(31,71,228,0.08); }`);
-    htmlParts.push(html);
-    cssParts.push(...css);
+  function capitalizeFirst(str) {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  function buildForm(node) {
+    const texts = classifyTexts(node);
+
+    const welcome = texts.find(t => t.raw.toLowerCase().includes('welcome'));
+    const title = texts.find(t => t.raw.toLowerCase().includes('login into your account'));
+    const emailLabel = texts.find(t => t.raw.toLowerCase().includes('e-mail') || t.raw.toLowerCase().includes('username'));
+    const emailInput = texts.find(t => t.raw.toLowerCase().includes('ex: teste@teste.com'));
+    const passwordLabel = texts.find(t => t.raw.toLowerCase() === 'password');
+    const passwordInput = texts.find(t => t.raw.toLowerCase().includes('ex: upfdlrvacir2ua'));
+    const forgot = texts.find(t => t.raw.toLowerCase().includes('forgot'));
+    const button = texts.find(t => t.raw.toLowerCase() === 'login');
+    const note = texts.find(t => t.raw.toLowerCase().includes('new user') || t.raw.toLowerCase().includes('createaccount'));
+
+    html = `<form class="form-0" autocomplete="off">\n`;
+
+    if (welcome) html += `<div class="form-welcome">${welcome.raw}</div>\n`;
+    if (title) html += `<div class="form-title">${title.raw}</div>\n`;
+
+    // Email
+    if (emailLabel) html += `<label class="form-label" for="email">${capitalizeFirst(emailLabel.raw.toLowerCase())}</label>\n`;
+    if (emailInput) html += `<div class="input-block"><input id="email" name="email" type="text" placeholder="${emailInput.raw}" autocomplete="username" /></div>\n`;
+
+    // Password row
+    if (passwordLabel || forgot) {
+      html += `<div class="form-label-row">`;
+      if (passwordLabel) html += `<label class="form-label" for="password">${capitalizeFirst(passwordLabel.raw.toLowerCase())}</label>`;
+      if (forgot) html += `<a class="form-link" href="#">${forgot.raw}</a>`;
+      html += `</div>\n`;
+    }
+    if (passwordInput) html += `<div class="input-block"><input id="password" name="password" type="password" placeholder="${passwordInput.raw}" autocomplete="current-password" /></div>\n`;
+
+    if (button) html += `<button class="form-btn" type="submit">${button.raw}</button>\n`;
+    if (note) html += `<div class="form-note">${note.raw}</div>\n`;
+
+    html += `</form>`;
   }
 
   // --- Основной вызов ---
   const formContainer = findFormContainer(json.document);
   if (formContainer) {
-    parseForm(formContainer);
+    buildForm(formContainer);
   } else {
-    htmlParts.push('<div style="color:red;text-align:center">Форма не найдена</div>');
+    html = '<div style="color:red;text-align:center">Форма не найдена</div>';
   }
+
+  // --- CSS для максимального соответствия макету ---
+  const css = `
+body {
+  margin: 0;
+  font-family: 'Inter', Arial, sans-serif;
+  background: #181a20;
+  color: #fff;
+}
+.form-0 {
+  max-width: 320px;
+  margin: 0 auto;
+  background: #23272f;
+  border-radius: 12px;
+  padding: 28px 18px 18px 18px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.input-block {
+  margin-bottom: 12px;
+}
+input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.2px solid #454a54;
+  border-radius: 6px;
+  background: #23272f;
+  color: #bfc9da;
+  font-size: 15px;
+  margin-bottom: 0;
+  outline: none;
+  transition: border 0.2s, background 0.2s;
+  box-sizing: border-box;
+}
+input::placeholder {
+  color: #7c8593;
+  opacity: 1;
+  font-size: 14px;
+  font-weight: 400;
+}
+input:focus {
+  border-color: #1769ff;
+  background: #23272f;
+  color: #fff;
+}
+.form-btn {
+  width: 100%;
+  background: #1769ff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 20px;
+  font-weight: 700;
+  padding: 13px 0;
+  margin: 18px 0 0 0;
+  cursor: pointer;
+  transition: background 0.2s;
+  box-shadow: 0 2px 8px rgba(23,105,255,0.15);
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+.form-btn:hover {
+  background: #155edb;
+}
+.form-link {
+  color: #bfc9da;
+  opacity: 1;
+  margin-left: 0;
+  float: none;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 400;
+}
+.form-link:hover {
+  text-decoration: underline;
+  color: #1769ff;
+}
+.form-label, .form-label-row .form-label {
+  font-size: 13px;
+  color: #bfc9da;
+  margin-bottom: 2px;
+  margin-top: 10px;
+  display: block;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+.form-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+  margin-top: 10px;
+}
+.form-welcome {
+  text-align: center;
+  font-size: 13px;
+  color: #bfc9da;
+  margin-bottom: 2px;
+  margin-top: 0;
+  letter-spacing: 1px;
+  font-weight: 400;
+  text-transform: none;
+}
+.form-title {
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 16px;
+  margin-top: 0;
+  letter-spacing: 0.01em;
+}
+.form-note {
+  font-size: 12px;
+  color: #bfc9da;
+  margin-top: 12px;
+  text-align: left;
+}
+`.trim();
 
   return {
     html: `
@@ -166,17 +215,16 @@ function parseFigmaJson(json) {
 <head>
   <meta charset="UTF-8">
   <title>Generated Login Page</title>
-  <link rel="stylesheet" href="/result/result.css">
+  <style>
+    ${css}
+  </style>
 </head>
-<body style="background:#144ee3;min-height:100vh;display:flex;align-items:center;justify-content:center;">
-  ${htmlParts.join('\n')}
+<body style="background:#181a20;min-height:100vh;display:flex;align-items:center;justify-content:center;">
+  ${html}
 </body>
 </html>
     `.trim(),
-    css: `
-body { margin: 0; font-family: 'Inter', Arial, sans-serif; background: #144ee3; color: #fff; }
-${cssParts.join('\n')}
-    `.trim()
+    css
   };
 }
 
