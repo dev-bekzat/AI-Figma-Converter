@@ -1,81 +1,81 @@
-AI-Powered Figma to Code Converter**
+# AI-Powered Figma to Code Converter
 
-Локальный инструмент, который преобразует дизайн из Figma в чистый HTML и CSS с помощью AI (GPT).
-
----
-
-## Основные возможности
-
-* ⭐ Поддержка Figma URL и загрузки .json файла
-* ⭐ Интеграция с GPT-3.5-turbo для генерации HTML-структуры
-* ⭐ Генерация CSS в тёмной теме с современным дизайном
-* ⭐ Распознавание элементов: TEXT, INPUT, BUTTON
-* ⭐ Мгновенная генерация и скачивание result.html и result.css
-* ⭐ Полностью локальная работа, без регистрации и ограничений
-* ⭐ Оптимизированная HTML-структура — без лишних вложений (в отличие от Locofy)
-* ⭐ Гибкость — код можно использовать с любым фреймворком, а не только React как у Builder.io
-* ⭐ AI-модели (GPT, T5, Vision Transformers):
-
-  * Генерация семантической структуры
-  * Автоматизация адаптивности и доступности
+A fully local tool that transforms Figma designs into modern, clean HTML and CSS using AI (GPT)
 
 ---
 
-## Структура проекта
+## Features
 
-| Файл / Папка   | Назначение                             |
-| -------------- | -------------------------------------- |
-| index.html   | Интерфейс загрузки                     |
-| style.css    | Стили для фронтенда                    |
-| script.js    | Логика взаимодействия с сервером       |
-| server.js    | Сервер на Express для обработки файлов |
-| parser/ai.js | Основная логика генерации HTML и CSS   |
-| result.html  | Сгенерированный HTML                   |
-| result.css   | Сгенерированный CSS                    |
+- Supports both Figma URL and uploaded `.json` file
+- Integration with OpenAI GPT-3.5-turbo for intelligent HTML structure generation
+- Dark theme CSS generation with modern layout principles
+- Automatically detects and describes Figma elements (TEXT, INPUT, BUTTON)
+- Instantly generates and offers downloads for `result.html` and `result.css`
+- Unlike many existing services, our script works locally, requires no registration, and gives full control over the output
+- The HTML structure is optimized — we avoid overly nested layers, which is a common issue with tools like Locofy
+- Our approach is more flexible — the generated code can be used with any framework, not just React like in Builder.io
+- Transformer Models (e.g., GPT, T5, or Vision Transformers):
+  - Generating structured front-end code from Figma JSON data
+  - Automating responsiveness and accessibility features
 
 ---
 
-## Как запустить
+## Structure
 
-1. ⭐ Установить зависимости:
+- `index.html` — user interface for uploads
+- `script.js` — frontend logic
+- `style.css` — frontend styling
+- `server.js` — Express backend
+- `parser/ai.js` — AI logic for HTML/CSS generation
+- `result.html`, `result.css` — generated output files
 
-     npm install express axios express-fileupload cors dotenv
-   
-2. ⭐ Создать .env файл:
+---
 
-     OPENAI_API_KEY=sk-xxx...
+## How to run
+
+1. Install dependencies:
+   ```bash
+   npm install express axios express-fileupload cors dotenv
+   ```
+
+2. Create a `.env` file in the project root:
+   ```env
+   OPENAI_API_KEY=sk-xxx...
    FIGMA_TOKEN=figd_...
-   
-3. ⭐ Запустить сервер:
+   ```
 
-     node server.js
-   
-4. ⭐ Открыть в браузере:
+3. Start the server:
+   ```bash
+   node server.js
+   ```
 
-     http://localhost:3000
-   
----
-
-## Как это работает
-
-1. Пользователь вводит ссылку на Figma или загружает JSON
-2. Сервер получает и обрабатывает макет
-3. ai.js извлекает структуру и стили
-4. Отправляется запрос в GPT с описанием
-5. Полученные HTML и CSS сохраняются как готовые файлы
+4. Open in browser:
+   ```
+   http://localhost:3000
+   ```
 
 ---
 
-## Пример
+## How it works
 
-* Вход: макет страницы входа (Login) из Figma
-* Выход: адаптивная HTML-страница с тёмной темой и формой входа
+1. The user provides a Figma URL or uploads the design JSON
+2. The backend fetches or reads the JSON
+3. `ai.js` extracts and summarizes component structure
+4. A prompt is sent to GPT describing the layout
+5. GPT returns HTML + CSS which are saved as downloadable files
 
 ---
 
-## Технологии
+## Example
 
-* ⭐ Node.js + Express
-* ⭐ OpenAI GPT-3.5 API
-* ⭐ HTML5 / CSS3
-* ⭐ Figma REST API
+- Input: Login page (Figma)
+- Output: Visually matching responsive HTML page with form and dark styling
+
+---
+
+## Technologies
+
+- Node.js + Express
+- OpenAI GPT-3.5 API
+- HTML5 / CSS3
+- Figma REST API
