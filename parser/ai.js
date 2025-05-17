@@ -1,6 +1,38 @@
-function parseFigmaJson(json) {
-  let html = '';
+// parser/ai.js — универсальный парсер Figma JSON с fallback и логами
 
+const axios = require('axios');
+require('dotenv').config();
+
+async function fetchFromGPT(prompt) {
+  try {
+    const res = await axios.post('https://api.openai.com/v1/chat/completions', {
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.2
+    }, {
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    return res.data.choices?.[0]?.message?.content || '<!-- GPT returned no content -->';
+  } catch (err) {
+    console.error('[GPT Error]', err.response?.status, err.response?.data || err.message);
+    return '<!-- GPT fetch failed -->';
+  }
+}
+
+function rgba(color, opacity = 1) {
+  if (!color) return 'transparent';
+  const r = Math.round(color.r * 255);
+  const g = Math.round(color.g * 255);
+  const b = Math.round(color.b * 255);
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
+
+async function parseFigmaJson(json) {
+  // --- Специализированный парсер для Login формы ---
   function findFormContainer(node) {
     if (!node || !node.type) return null;
     const name = (node.name || '').toLowerCase();
@@ -54,7 +86,7 @@ function parseFigmaJson(json) {
     const button = texts.find(t => t.raw.toLowerCase() === 'login');
     const note = texts.find(t => t.raw.toLowerCase().includes('new user') || t.raw.toLowerCase().includes('createaccount'));
 
-    html = `<form class="form-0" autocomplete="off">\n`;
+    let html = `<form class="form-0" autocomplete="off">\n`;
 
     if (welcome) html += `<div class="form-welcome">${welcome.raw}</div>\n`;
     if (title) html += `<div class="form-title">${title.raw}</div>\n`;
@@ -76,12 +108,14 @@ function parseFigmaJson(json) {
     if (note) html += `<div class="form-note">${note.raw}</div>\n`;
 
     html += `</form>`;
+    return html;
   }
 
   // --- Основной вызов ---
+  let html = '';
   const formContainer = findFormContainer(json.document);
   if (formContainer) {
-    buildForm(formContainer);
+    html = buildForm(formContainer);
   } else {
     html = '<div style="color:red;text-align:center">Форма не найдена</div>';
   }
@@ -95,41 +129,41 @@ body {
   color: #fff;
 }
 .form-0 {
-  max-width: 320px;
+  max-width: 420px;
   margin: 0 auto;
   background: #23272f;
-  border-radius: 12px;
-  padding: 28px 18px 18px 18px;
+  border-radius: 10px;
+  padding: 40px 24px 28px 24px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.18);
   display: flex;
   flex-direction: column;
   align-items: stretch;
 }
 .input-block {
-  margin-bottom: 12px;
+  margin-bottom: 18px;
 }
 input {
   width: 100%;
-  padding: 11px 14px;
-  border: 1.2px solid #454a54;
+  padding: 16px 18px;
+  border: 1.5px solid #bfc9da;
   border-radius: 6px;
-  background: #23272f;
-  color: #bfc9da;
-  font-size: 15px;
+  background: transparent;
+  color: #fff;
+  font-size: 16px;
   margin-bottom: 0;
   outline: none;
   transition: border 0.2s, background 0.2s;
   box-sizing: border-box;
 }
 input::placeholder {
-  color: #7c8593;
+  color: #bfc9da;
   opacity: 1;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 400;
 }
 input:focus {
   border-color: #1769ff;
-  background: #23272f;
+  background: transparent;
   color: #fff;
 }
 .form-btn {
@@ -137,11 +171,11 @@ input:focus {
   background: #1769ff;
   color: #fff;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 20px;
   font-weight: 700;
-  padding: 13px 0;
-  margin: 18px 0 0 0;
+  padding: 18px 0;
+  margin: 28px 0 0 0;
   cursor: pointer;
   transition: background 0.2s;
   box-shadow: 0 2px 8px rgba(23,105,255,0.15);
@@ -157,7 +191,7 @@ input:focus {
   margin-left: 0;
   float: none;
   text-decoration: none;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 400;
 }
 .form-link:hover {
@@ -165,10 +199,10 @@ input:focus {
   color: #1769ff;
 }
 .form-label, .form-label-row .form-label {
-  font-size: 13px;
+  font-size: 14px;
   color: #bfc9da;
-  margin-bottom: 2px;
-  margin-top: 10px;
+  margin-bottom: 6px;
+  margin-top: 18px;
   display: block;
   font-weight: 500;
   letter-spacing: 0.01em;
@@ -178,32 +212,32 @@ input:focus {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2px;
-  margin-top: 10px;
+  margin-bottom: 6px;
+  margin-top: 18px;
 }
 .form-welcome {
   text-align: center;
   font-size: 13px;
   color: #bfc9da;
-  margin-bottom: 2px;
+  margin-bottom: 8px;
   margin-top: 0;
   letter-spacing: 1px;
   font-weight: 400;
-  text-transform: none;
+  text-transform: uppercase;
 }
 .form-title {
   text-align: center;
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   color: #fff;
-  margin-bottom: 16px;
+  margin-bottom: 28px;
   margin-top: 0;
   letter-spacing: 0.01em;
 }
 .form-note {
-  font-size: 12px;
+  font-size: 13px;
   color: #bfc9da;
-  margin-top: 12px;
+  margin-top: 16px;
   text-align: left;
 }
 `.trim();

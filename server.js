@@ -11,7 +11,7 @@ const { parseFigmaJson } = require('./parser/ai');
 const app = express();
 const PORT = 3000;
 
-const FIGMA_TOKEN = process.env.FIGMA_TOKEN || 'figd_HlmFvpQySPenZKLY9_cD7ODx9cXXw7VUjhpQ8XL5';
+const FIGMA_TOKEN = process.env.FIGMA_TOKEN || 'figd_aCaDcmi9vDSNqMLZovdWW0anZZYEJ3K9JqroOyvv';
 
 app.use(cors());
 app.use(express.static('public'));
@@ -44,9 +44,18 @@ app.post('/generate-url', async (req, res) => {
 
     try {
         const json = await fetchFigmaJson(fileId);
-        const { html, css } = parseFigmaJson(json);
+        const { html, css } = await parseFigmaJson(json);
 
-        const resultDir = path.join(__dirname, 'result');
+if (!html || !css) {
+  throw new Error("HTML или CSS не были сгенерированы. Проверь ai.js");
+}
+
+const resultDir = path.join(__dirname, 'result');
+
+fs.writeFileSync(path.join(resultDir, 'result.html'), html);
+fs.writeFileSync(path.join(resultDir, 'result.css'), css);
+
+
         if (!fs.existsSync(resultDir)) fs.mkdirSync(resultDir);
 
         fs.writeFileSync(path.join(resultDir, 'result.html'), html);
