@@ -36,3 +36,11 @@ button:hover {
 #result a:hover {
     text-decoration: underline;
 }
+
+.download-btn {
+    margin:10px;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+}
