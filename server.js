@@ -11,7 +11,7 @@ const { parseFigmaJson } = require('./parser/ai');
 const app = express();
 const PORT = 3000;
 
-const FIGMA_TOKEN = process.env.FIGMA_TOKEN || 'figd_HlmFvpQySPenZKLY9_cD7ODx9cXXw7VUjhpQ8XL5';
+const FIGMA_TOKEN = process.env.FIGMA_TOKEN || 'your_figma_token';
 
 app.use(cors());
 app.use(express.static('public'));
