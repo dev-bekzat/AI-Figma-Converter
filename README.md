@@ -56,7 +56,7 @@ A fully local tool that transforms Figma designs into modern, clean HTML and CSS
 
 ---
 
-## How it Works
+## How it works
 
 1. The user provides a Figma URL or uploads the design JSON
 2. The backend fetches or reads the JSON
@@ -68,7 +68,7 @@ A fully local tool that transforms Figma designs into modern, clean HTML and CSS
 
 ## Example
 
-- Input: Login Page (Figma)
+- Input: Login page (Figma)
 - Output: Visually matching responsive HTML page with form and dark styling
 
 ---
