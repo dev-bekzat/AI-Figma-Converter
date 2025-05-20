@@ -22,9 +22,17 @@ A fully local tool that transforms Figma designs into modern, clean HTML and CSS
 
 ## Preview
 
-| Upload UI         | With URL + Download | Generated Page    |
-| ----------------- | ------------------- | ----------------- |
-| ![](images/1.png) | ![](images/2.png)   | ![](images/3.png) |
+| Upload UI           |
+| ------------------- |
+| ![](images/1.png)   |
+
+| With URL + Download |
+| ------------------- |
+| ![](images/2.png)   |
+
+| Generated Page      |
+| ------------------- |
+| ![](images/3.png)   |
 
 ---
 
