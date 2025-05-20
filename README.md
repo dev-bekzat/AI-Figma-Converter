@@ -20,6 +20,14 @@ A fully local tool that transforms Figma designs into modern, clean HTML and CSS
 
 ---
 
+## Preview
+
+| Upload UI         | With URL + Download | Generated Page    |
+| ----------------- | ------------------- | ----------------- |
+| ![](images/1.png) | ![](images/2.png)   | ![](images/3.png) |
+
+---
+
 ## Structure
 
 - `index.html` — user interface for uploads
